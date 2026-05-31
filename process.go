@@ -95,7 +95,11 @@ func processFile(ctx context.Context, cfg *Config, s *download.Store, filename s
 // media instead. That is, it makes a given reddit post fully self-contained
 // and localized.
 func processPost(ctx context.Context, s *download.Store, m bdfr.Message) error {
-	selftext := m.GetString("selftext")
+	selftext, err := m.GetString("selftext")
+	if err != nil {
+		return err
+	}
+
 	m.SetString("selftext", processBody(ctx, s, selftext))
 
 	comments, err := m.GetSliceOfMessages("comments")
@@ -116,8 +120,12 @@ func processPost(ctx context.Context, s *download.Store, m bdfr.Message) error {
 // processComment saves external media referenced by the given bdfr comment,
 // then updates its message body such that it links to the local media instead.
 func processComment(ctx context.Context, s *download.Store, c bdfr.Message) error {
-	body := processBody(ctx, s, c.GetString("body"))
-	c.SetString("body", body)
+	body, err := c.GetString("body")
+	if err != nil {
+		return err
+	}
+
+	c.SetString("body", processBody(ctx, s, body))
 
 	replies, err := c.GetSliceOfMessages("replies")
 	if err != nil {

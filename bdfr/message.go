@@ -11,12 +11,18 @@ type Message map[string]any
 
 // GetString retrieves message's string value with the given key. It returns
 // the empty string if the message does not contain the given key.
-func (m Message) GetString(key string) string {
-	st := m[key]
-	if st == nil {
-		return ""
+func (m Message) GetString(key string) (string, error) {
+	val := m[key]
+	if val == nil {
+		return "", nil
 	}
-	return st.(string)
+
+	s, ok := val.(string)
+	if !ok {
+		return "", fmt.Errorf("bdfr message field has unexpected type: key=%s have=%T want=string", key, val)
+	}
+
+	return s, nil
 }
 
 // SetString assigns the specified key-value pair to a message.
