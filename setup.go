@@ -31,6 +31,10 @@ func parseArgs() (*Config, error) {
 	}
 	destDir := flag.Args()[1]
 
+	if *jobs <= 0 {
+		return nil, fmt.Errorf("invalid jobs setting: have=%d want>=1", *jobs)
+	}
+
 	return &Config{
 		Source:  source,
 		DestDir: destDir,
