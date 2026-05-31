@@ -31,6 +31,7 @@ func GetBody(ctx context.Context, hc *http.Client, u string, header http.Header)
 	}
 
 	if rsp.StatusCode < 200 || rsp.StatusCode >= 300 {
+		rsp.Body.Close()
 		return nil, fmt.Errorf("error status: %s", rsp.Status)
 	}
 
