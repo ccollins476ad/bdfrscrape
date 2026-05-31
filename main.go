@@ -49,9 +49,5 @@ func main() {
 		os.Exit(2)
 	}
 
-	err = processFiles(context.Background(), cfg, filenames)
-	if err != nil {
-		printFatalError(err)
-		os.Exit(3)
-	}
+	processFiles(context.Background(), cfg, filenames)
 }

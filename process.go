@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ccollins476ad/bdfrscrape/bdfr"
@@ -15,34 +16,35 @@ import (
 	"github.com/ccollins476ad/bdfrscrape/media/imgur"
 	"github.com/ccollins476ad/bdfrscrape/media/postimg"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
 	"mvdan.cc/xurls/v2"
 )
 
 // processFiles calls processFile() for each filename in the given slice. It
 // processes the files in parallel, cfg.Jobs goroutines.
-func processFiles(ctx context.Context, cfg *Config, filenames []string) error {
+func processFiles(ctx context.Context, cfg *Config, filenames []string) {
 	s := download.NewStore(cfg.DestDir)
-	g := &errgroup.Group{}
+	filenameChan := make(chan string)
 
-	startGoroutines := func() {
-		filenameChan := make(chan string)
-		defer close(filenameChan)
-
-		// Create a set of goroutines to process posts in parallel.
-		for i := 0; i < cfg.Jobs; i++ {
-			g.Go(func() error {
-				// Read filenames from the channel and process them
-				// sequentially. Proceed until error or channel closed.
-				for filename := range filenameChan {
-					err := processFile(ctx, cfg, s, filename)
-					if err != nil {
-						return err
-					}
+	// Create a set of goroutines to process posts in parallel.
+	var wg sync.WaitGroup
+	for i := 0; i < cfg.Jobs; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Read filenames from the channel and process them
+			// sequentially. Proceed until error or channel closed.
+			for filename := range filenameChan {
+				err := processFile(ctx, cfg, s, filename)
+				if err != nil {
+					log.WithError(err).Errorf("failed to process file")
 				}
-				return nil
-			})
-		}
+			}
+		}()
+	}
+
+	// Inner function to leverage 'defer'.
+	func() {
+		defer close(filenameChan)
 
 		// Process bdfr posts.
 		for _, filename := range filenames {
@@ -55,11 +57,9 @@ func processFiles(ctx context.Context, cfg *Config, filenames []string) error {
 			case filenameChan <- filename:
 			}
 		}
-	}
+	}()
 
-	startGoroutines()
-
-	return g.Wait()
+	wg.Wait()
 }
 
 // processFile reads the given saved bdfr post from disk, processes it with
