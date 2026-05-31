@@ -42,11 +42,17 @@ func NewStore(destDir string) *Store {
 // EvaluateURL returns a descriptor for the media file that the given url
 // points to. It does not download anything. The `IsLocal` field in the
 // descriptor is true if the file has already been downloaded.
-func (s *Store) EvaluateURL(u string) (*Desc, error) {
-	filename, err := URLToFilename(u)
-	if err != nil {
-		log.WithError(err).Errorf("failed to convert url to filename: url=%s", u)
-		return nil, err
+func (s *Store) EvaluateURL(u string, filenameOverride string) (*Desc, error) {
+	var filename string
+	if filenameOverride != "" {
+		filename = filenameOverride
+	} else {
+		var err error
+		filename, err = URLToFilename(u)
+		if err != nil {
+			log.WithError(err).Errorf("failed to convert url to filename: url=%s", u)
+			return nil, err
+		}
 	}
 
 	destPath := s.destDir + "/" + filename
@@ -82,7 +88,7 @@ func (s *Store) SaveFile(relPath string, b []byte) error {
 // local path of the media file, relative to the configured destination
 // directory.
 func (s *Store) DownloadAs(ctx context.Context, u string, header http.Header, filename string) (string, error) {
-	desc, err := s.EvaluateURL(u)
+	desc, err := s.EvaluateURL(u, filename)
 	if err != nil {
 		return "", err
 	}
@@ -97,11 +103,7 @@ func (s *Store) DownloadAs(ctx context.Context, u string, header http.Header, fi
 		return "", err
 	}
 
-	if filename == "" {
-		filename = desc.Filename
-	}
-
-	err = s.SaveFile(filename, b)
+	err = s.SaveFile(desc.Filename, b)
 	if err != nil {
 		return "", fmt.Errorf("failed to save http response: %v", err)
 	}

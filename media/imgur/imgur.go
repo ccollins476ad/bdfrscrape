@@ -118,7 +118,7 @@ func (dl *Downloader) downloadImage(ctx context.Context, u string) (string, erro
 // constituent image, then builds an html gallery. It returns the path of the
 // gallery.
 func (dl *Downloader) downloadAlbum(ctx context.Context, albumURL string) (string, error) {
-	desc, err := dl.s.EvaluateURL(albumURL)
+	desc, err := dl.s.EvaluateURL(albumURL, "")
 	if err != nil {
 		return "", err
 	}

@@ -63,7 +63,7 @@ func parseAlbum(doc *html.Node) ([]string, error) {
 // constituent image, then builds an html gallery. It returns the path of the
 // gallery.
 func (dl *Downloader) downloadAlbum(ctx context.Context, u string) (string, error) {
-	desc, err := dl.s.EvaluateURL(u)
+	desc, err := dl.s.EvaluateURL(u, "")
 	if err != nil {
 		return "", err
 	}
@@ -110,7 +110,7 @@ func (dl *Downloader) downloadAlbum(ctx context.Context, u string) (string, erro
 
 // downloadImage downloads an individual imgbb image from the given url.
 func (dl *Downloader) downloadImage(ctx context.Context, u string) (string, error) {
-	desc, err := dl.s.EvaluateURL(u)
+	desc, err := dl.s.EvaluateURL(u, "")
 	if err != nil {
 		return "", err
 	}
