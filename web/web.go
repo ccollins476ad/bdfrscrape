@@ -16,7 +16,7 @@ func BuildGallery(filenames []string) string {
 `)
 
 	for _, f := range filenames {
-		sb.WriteString(fmt.Sprintf("<img src=\"%s\" alt=\"%s\" style=\"background-size:100% 100%\">\n", f, f))
+		sb.WriteString(fmt.Sprintf("<img src=\"%s\" alt=\"%s\" style=\"background-size:100%% 100%%\">\n", f, f))
 	}
 
 	sb.WriteString(`</body>
