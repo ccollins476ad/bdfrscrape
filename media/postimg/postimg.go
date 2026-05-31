@@ -2,6 +2,7 @@ package postimg
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -39,6 +40,11 @@ func (dl *Downloader) Download(ctx context.Context, u string) (string, error) {
 	if strings.HasPrefix(u, "https://postimg.cc/gallery/") {
 		return dl.downloadAlbum(ctx, u)
 	}
+
+	if strings.HasPrefix(u, "https://postimg.cc/") {
+		return dl.downloadSingleImagePage(ctx, u)
+	}
+
 	return "", nil
 }
 
@@ -128,4 +134,34 @@ func (dl *Downloader) downloadAlbum(ctx context.Context, albumURL string) (strin
 	}
 
 	return desc.Filename, nil
+}
+
+func (dl *Downloader) downloadSingleImagePage(ctx context.Context, u string) (string, error) {
+	desc, err := dl.s.EvaluateURL(u, "")
+	if err != nil {
+		return "", err
+	}
+
+	if desc.IsLocal {
+		// Already downloaded.
+		return desc.Filename, nil
+	}
+
+	body, err := download.GetBody(ctx, dl.s.HTTPClient(), u, nil)
+	if err != nil {
+		return "", err
+	}
+	defer body.Close()
+
+	doc, err := html.Parse(download.NewContextReader(ctx, body))
+	if err != nil {
+		return "", err
+	}
+
+	imageURLs := web.EmbeddedImageURLs(doc)
+	if len(imageURLs) == 0 {
+		return "", fmt.Errorf("single image postimg page does not contain an image url")
+	}
+
+	return dl.s.DownloadAs(ctx, imageURLs[0], nil, desc.Filename)
 }
