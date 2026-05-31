@@ -104,7 +104,10 @@ func processPost(ctx context.Context, s *download.Store, m bdfr.Message) error {
 	}
 
 	for _, c := range comments {
-		processComment(ctx, s, c)
+		err := processComment(ctx, s, c)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
