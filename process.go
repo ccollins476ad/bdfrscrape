@@ -11,6 +11,7 @@ import (
 
 	"github.com/ccollins476ad/bdfrscrape/bdfr"
 	"github.com/ccollins476ad/bdfrscrape/download"
+	"github.com/ccollins476ad/bdfrscrape/fileutil"
 	"github.com/ccollins476ad/bdfrscrape/media"
 	"github.com/ccollins476ad/bdfrscrape/media/imgbb"
 	"github.com/ccollins476ad/bdfrscrape/media/imgur"
@@ -34,9 +35,14 @@ func processFiles(ctx context.Context, cfg *Config, filenames []string) {
 			// Read filenames from the channel and process them
 			// sequentially. Proceed until error or channel closed.
 			for filename := range filenameChan {
-				err := processFile(ctx, cfg, s, filename)
-				if err != nil {
-					log.WithError(err).Errorf("failed to process file")
+				isDup := fileutil.FileExists(destPath(cfg, filename))
+				if isDup && !cfg.ProcessDups {
+					log.Debugf("skipping duplicate file: %s", filename)
+				} else {
+					err := processFile(ctx, cfg, s, filename)
+					if err != nil {
+						log.WithError(err).Errorf("failed to process file")
+					}
 				}
 			}
 		}()
@@ -82,7 +88,7 @@ func processFile(ctx context.Context, cfg *Config, s *download.Store, filename s
 		return err
 	}
 
-	err = os.WriteFile(cfg.DestDir+"/"+filename, b, 0644)
+	err = os.WriteFile(destPath(cfg, filename), b, 0644)
 	if err != nil {
 		return err
 	}
@@ -212,4 +218,8 @@ func downloadMedia(ctx context.Context, s *download.Store, u string) (string, er
 		}
 	}
 	return "", nil
+}
+
+func destPath(cfg *Config, filename string) string {
+	return cfg.DestDir + "/" + filename
 }

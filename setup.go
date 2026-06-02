@@ -8,15 +8,17 @@ import (
 )
 
 type Config struct {
-	Source  string // Path of directory containing source bdfr posts.
-	DestDir string // Destination directory to save media and processed posts to.
-	Verbose bool   // True for verbose output.
-	Jobs    int    // Number of jobs to run in parallel.
+	Source      string // Path of directory containing source bdfr posts.
+	DestDir     string // Destination directory to save media and processed posts to.
+	Verbose     bool   // True for verbose output.
+	Jobs        int    // Number of jobs to run in parallel.
+	ProcessDups bool   // Whether process content if destination files already exist.
 }
 
 func parseArgs() (*Config, error) {
 	verbose := flag.Bool("v", false, "verbose output")
 	jobs := flag.Int("j", 1, "jobs")
+	processDups := flag.Bool("process-dups", false, "process files whose destination already exists")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -36,10 +38,11 @@ func parseArgs() (*Config, error) {
 	}
 
 	return &Config{
-		Source:  source,
-		DestDir: destDir,
-		Verbose: *verbose,
-		Jobs:    *jobs,
+		Source:      source,
+		DestDir:     destDir,
+		Verbose:     *verbose,
+		Jobs:        *jobs,
+		ProcessDups: *processDups,
 	}, nil
 }
 
