@@ -83,18 +83,18 @@ func (s *Store) EvaluateURL(u string, filenameOverride string) (*Desc, error) {
 
 func (s *Store) SaveFile(relPath string, b []byte) error {
 	destPath := s.destDir + "/" + relPath
-	log.Infof("downloading %s", destPath)
+	log.Infof("saving %s", destPath)
 	return os.WriteFile(destPath, b, 0644)
 }
 
 // DownloadAs ensures the given media file has been downloaded. It downloads
-// the file if it is not already on disk. The filename parameter specifies the
-// local path of the file, relative to the configured bdfrscrape destination
-// directory. It infers the path from the url if filename is "". It returns the
-// local path of the media file, relative to the configured destination
-// directory.
-func (s *Store) DownloadAs(ctx context.Context, u string, header http.Header, filename string) (string, error) {
-	desc, err := s.EvaluateURL(u, filename)
+// the file if it is not already on disk. The overrideFilename parameter
+// specifies the local path of the file, relative to the configured bdfrscrape
+// destination directory. It infers the path from the url if overrideFilename
+// is "". It returns the local path of the media file, relative to the
+// configured destination directory.
+func (s *Store) DownloadAs(ctx context.Context, u string, header http.Header, overrideFilename string) (string, error) {
+	desc, err := s.EvaluateURL(u, overrideFilename)
 	if err != nil {
 		return "", err
 	}
@@ -114,7 +114,7 @@ func (s *Store) DownloadAs(ctx context.Context, u string, header http.Header, fi
 		return "", fmt.Errorf("failed to save http response: %v", err)
 	}
 
-	return filename, nil
+	return desc.Filename, nil
 }
 
 // DownloadAs ensures the given media file has been downloaded. It downloads
