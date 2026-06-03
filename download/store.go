@@ -19,7 +19,8 @@ var AlreadyAttempted = errors.New("download already attempted")
 type Store struct {
 	destDir string // constant
 
-	hc *http.Client
+	hc     *http.Client
+	logger log.FieldLogger
 
 	seenMtx sync.Mutex          // Protects the "seen" field.
 	seen    map[string]struct{} // Media URLs we have already seen.
@@ -35,8 +36,13 @@ func NewStore(destDir string) *Store {
 	return &Store{
 		destDir: destDir,
 		hc:      &http.Client{},
+		logger:  log.New(),
 		seen:    map[string]struct{}{},
 	}
+}
+
+func (s *Store) Logger() log.FieldLogger {
+	return s.logger
 }
 
 // EvaluateURL returns a descriptor for the media file that the given url

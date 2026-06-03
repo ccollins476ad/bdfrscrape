@@ -34,12 +34,14 @@ type albumInfoDataWrapper struct {
 // Downloader retrieves imgur images and albums from the web. It implements the
 // media.Downloader interface.
 type Downloader struct {
-	s *download.Store
+	s      *download.Store
+	logger log.FieldLogger
 }
 
-func NewDownloader(s *download.Store) *Downloader {
+func NewDownloader(logger log.FieldLogger, s *download.Store) *Downloader {
 	return &Downloader{
-		s: s,
+		s:      s,
+		logger: logger,
 	}
 }
 
