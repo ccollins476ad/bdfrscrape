@@ -17,7 +17,8 @@ var AlreadyAttempted = errors.New("download already attempted")
 
 // Store downloads media linked to by bdfr messages.
 type Store struct {
-	destDir string // constant
+	destDir          string // constant
+	downloadExisting bool   // constant
 
 	hc     *http.Client
 	logger log.FieldLogger
@@ -41,6 +42,12 @@ func NewStore(destDir string) *Store {
 	}
 }
 
+// SetDownloadExisting configures whether the store downloads files that
+// already exist on disk.
+func (s *Store) SetDownloadExisting(val bool) {
+	s.downloadExisting = val
+}
+
 func (s *Store) Logger() log.FieldLogger {
 	return s.logger
 }
@@ -62,7 +69,7 @@ func (s *Store) EvaluateURL(u string, filenameOverride string) (*Desc, error) {
 	}
 
 	destPath := s.destDir + "/" + filename
-	if fileutil.FileExists(destPath) {
+	if !s.downloadExisting && fileutil.FileExists(destPath) {
 		log.Debugf("skipping %s: file already exists: %s", u, destPath)
 		return &Desc{
 			Filename: filename,

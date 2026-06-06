@@ -24,6 +24,8 @@ import (
 // processes the files in parallel, cfg.Jobs goroutines.
 func processFiles(ctx context.Context, cfg *Config, filenames []string) {
 	s := download.NewStore(cfg.DestDir)
+	s.SetDownloadExisting(cfg.ProcessDups)
+
 	filenameChan := make(chan string)
 
 	// Create a set of goroutines to process posts in parallel.
