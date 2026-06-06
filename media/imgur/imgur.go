@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ccollins476ad/bdfrscrape/download"
+	"github.com/ccollins476ad/bdfrscrape/util"
 	"github.com/ccollins476ad/bdfrscrape/web"
 	"github.com/koffeinsource/go-imgur"
 	log "github.com/sirupsen/logrus"
@@ -34,35 +35,38 @@ type albumInfoDataWrapper struct {
 // Downloader retrieves imgur images and albums from the web. It implements the
 // media.Downloader interface.
 type Downloader struct {
-	s      *download.Store
-	logger log.FieldLogger
+	s *download.Store
 }
 
-func NewDownloader(logger log.FieldLogger, s *download.Store) *Downloader {
+func NewDownloader(s *download.Store) *Downloader {
 	return &Downloader{
-		s:      s,
-		logger: logger,
+		s: s,
 	}
 }
 
 // Download retrieves imgur media from the given url. It can download albums
 // and individual images. See media.Downloader#Download for API details.
 func (dl *Downloader) Download(ctx context.Context, u string) (string, error) {
+	logger := dl.s.Logger().WithFields(log.Fields{
+		util.LogFieldDownloader: "imgur",
+		util.LogFieldTopURL:     u,
+	})
+
 	// Album.
 	if strings.HasPrefix(u, "https://imgur.com/a/") {
-		return dl.downloadAlbum(ctx, u)
+		return dl.downloadAlbum(ctx, logger, u)
 	}
 
 	// Individual image.
 	if strings.HasPrefix(u, "https://i.imgur.com/") {
-		return dl.downloadImage(ctx, u)
+		return dl.downloadImage(ctx, logger, u)
 	}
 
 	// Alternate image url format:
 	//     https://imgur.com/<image_id>
 	imageID := strings.TrimPrefix(u, "https://imgur.com/")
 	if len(imageID) == 7 {
-		return dl.downloadImage(ctx, "https://i.imgur.com/"+imageID+".jpeg")
+		return dl.downloadImage(ctx, logger, "https://i.imgur.com/"+imageID+".jpeg")
 	}
 
 	return "", nil
@@ -70,8 +74,8 @@ func (dl *Downloader) Download(ctx context.Context, u string) (string, error) {
 
 // albumLinks reads the imgur album at the specified url and returns the urls
 // of all its images.
-func albumLinks(ctx context.Context, hc *http.Client, u string) ([]string, error) {
-	log.Debugf("scanning imgur album: %s", u)
+func albumLinks(ctx context.Context, logger *log.Entry, hc *http.Client, u string) ([]string, error) {
+	logger.Debugf("scanning imgur album: %s", u)
 
 	trimmed := strings.TrimPrefix(u, "https://imgur.com/a/")
 	if len(trimmed) < 7 {
@@ -79,7 +83,7 @@ func albumLinks(ctx context.Context, hc *http.Client, u string) ([]string, error
 	}
 	if len(trimmed) > 7 {
 		hash := trimmed[len(trimmed)-7:]
-		log.Debugf("removing imgur album prefix: %s --> %s", trimmed, hash)
+		logger.Debugf("removing imgur album prefix: %s --> %s", trimmed, hash)
 		trimmed = hash
 	}
 
@@ -104,7 +108,7 @@ func albumLinks(ctx context.Context, hc *http.Client, u string) ([]string, error
 
 	var links []string
 	for _, img := range album.Images {
-		log.Debugf("detected imgur album image link: %s", img.Link)
+		logger.Debugf("detected imgur album image link: %s", img.Link)
 		links = append(links, img.Link)
 	}
 
@@ -112,14 +116,14 @@ func albumLinks(ctx context.Context, hc *http.Client, u string) ([]string, error
 }
 
 // downloadImage downloads an individual imgur image from the given url.
-func (dl *Downloader) downloadImage(ctx context.Context, u string) (string, error) {
+func (dl *Downloader) downloadImage(ctx context.Context, logger *log.Entry, u string) (string, error) {
 	return dl.s.Download(ctx, u, getHeader)
 }
 
 // downloadImage downloads an imgur album from the given url. It downloads each
 // constituent image, then builds an html gallery. It returns the path of the
 // gallery.
-func (dl *Downloader) downloadAlbum(ctx context.Context, albumURL string) (string, error) {
+func (dl *Downloader) downloadAlbum(ctx context.Context, logger *log.Entry, albumURL string) (string, error) {
 	desc, err := dl.s.EvaluateURL(albumURL, "")
 	if err != nil {
 		return "", err
@@ -130,14 +134,14 @@ func (dl *Downloader) downloadAlbum(ctx context.Context, albumURL string) (strin
 		return desc.Filename, nil
 	}
 
-	urls, err := albumLinks(ctx, dl.s.HTTPClient(), albumURL)
+	urls, err := albumLinks(ctx, logger, dl.s.HTTPClient(), albumURL)
 	if err != nil {
 		return "", err
 	}
 
 	var filenames []string
 	for _, u := range urls {
-		filename, err := dl.downloadImage(ctx, u)
+		filename, err := dl.downloadImage(ctx, logger, u)
 		if err != nil {
 			return "", err
 		}

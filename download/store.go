@@ -21,7 +21,7 @@ type Store struct {
 	downloadExisting bool   // constant
 
 	hc     *http.Client
-	logger log.FieldLogger
+	logger log.Ext1FieldLogger
 
 	seenMtx sync.Mutex          // Protects the "seen" field.
 	seen    map[string]struct{} // Media URLs we have already seen.
@@ -48,7 +48,7 @@ func (s *Store) SetDownloadExisting(val bool) {
 	s.downloadExisting = val
 }
 
-func (s *Store) Logger() log.FieldLogger {
+func (s *Store) Logger() log.Ext1FieldLogger {
 	return s.logger
 }
 

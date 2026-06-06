@@ -201,7 +201,7 @@ func processBody(ctx context.Context, s *download.Store, body string) string {
 // fails to save the specified media file.
 func downloadMedia(ctx context.Context, s *download.Store, u string) (string, error) {
 	dls := []media.Downloader{
-		imgur.NewDownloader(s.Logger(), s),
+		imgur.NewDownloader(s),
 		postimg.NewDownloader(s),
 		imgbb.NewDownloader(s),
 	}
